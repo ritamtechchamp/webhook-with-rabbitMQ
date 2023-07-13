@@ -1,4 +1,5 @@
 class WebhookEndpointsController < ApplicationController
+  include SneakersBuilder::SneakersWorkersBuilder 
   before_action :set_webhook_endpoint, only: %i[ show edit update destroy ]
 
   # GET /webhook_endpoints or /webhook_endpoints.json
@@ -26,6 +27,14 @@ class WebhookEndpointsController < ApplicationController
     respond_to do |format|
       if @webhook_endpoint.save
         CreateQueue.add('articles', @webhook_endpoint.queue_name)
+        
+        queue_name = "#{article.queue_name}"
+        klass_name = "#{article.queue_name}_worker"
+        
+        SneakersBuilder::SneakersWorkersBuilder.call(klass_name, queue_name) do |message|
+          WebhookService.call(message)
+        end
+
         format.html { redirect_to webhook_endpoint_url(@webhook_endpoint), notice: "Webhook endpoint was successfully created." }
         format.json { render :show, status: :created, location: @webhook_endpoint }
       else
