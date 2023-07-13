@@ -25,6 +25,7 @@ class WebhookEndpointsController < ApplicationController
 
     respond_to do |format|
       if @webhook_endpoint.save
+        CreateQueue.add('articles', @webhook_endpoint.queue_name)
         format.html { redirect_to webhook_endpoint_url(@webhook_endpoint), notice: "Webhook endpoint was successfully created." }
         format.json { render :show, status: :created, location: @webhook_endpoint }
       else
